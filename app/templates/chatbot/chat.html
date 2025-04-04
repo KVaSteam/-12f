@@ -1,0 +1,230 @@
+{% extends "layout/base.html" %}
+
+{% block styles %}
+<style>
+    .chat-container {
+        height: 65vh;
+        overflow-y: auto;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 75%;
+        word-break: break-word;
+    }
+    
+    .user-message {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .assistant-message {
+        background-color: #e9ecef;
+        color: #212529;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+    
+    .typing-indicator {
+        display: none;
+        padding: 10px 15px;
+        background-color: #e9ecef;
+        border-radius: 18px;
+        margin-bottom: 15px;
+        width: fit-content;
+        color: #6c757d;
+    }
+    
+    .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        animation: wave 1.3s linear infinite;
+        margin-right: 3px;
+    }
+    
+    .dot:nth-child(2) {
+        animation-delay: -1.1s;
+    }
+    
+    .dot:nth-child(3) {
+        animation-delay: -0.9s;
+    }
+    
+    @keyframes wave {
+        0%, 60%, 100% {
+            transform: initial;
+        }
+        30% {
+            transform: translateY(-5px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>Чат-ассистент для организаторов
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Этот ИИ-ассистент поможет вам найти информацию о мероприятиях и ответить на вопросы. 
+                        Вы можете задавать вопросы о конкретных мероприятиях, их датах, местах проведения и т.д.
+                    </div>
+                    
+                    <!-- Контейнер сообщений чата -->
+                    <div class="chat-container" id="chatContainer">
+                        <!-- Приветственное сообщение от ассистента -->
+                        <div class="message assistant-message">
+                            <div class="message-content">
+                                Здравствуйте! Я ваш ИИ-ассистент по мероприятиям. Чем я могу вам помочь?
+                            </div>
+                            <div class="message-time">
+                                Сейчас
+                            </div>
+                        </div>
+                        
+                        <!-- Индикатор набора текста -->
+                        <div class="typing-indicator" id="typingIndicator">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Форма отправки сообщения -->
+                    <form id="chatForm" class="d-flex">
+                        <input type="text" id="messageInput" class="form-control me-2" placeholder="Введите ваше сообщение..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatContainer = document.getElementById('chatContainer');
+    const typingIndicator = document.getElementById('typingIndicator');
+    
+    // Функция для прокрутки вниз чата
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    // Функция для форматирования времени
+    function getFormattedTime() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Функция для добавления сообщения в чат
+    function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.innerText = content;
+        
+        const messageTime = document.createElement('div');
+        messageTime.className = 'message-time';
+        messageTime.innerText = getFormattedTime();
+        
+        messageDiv.appendChild(messageContent);
+        messageDiv.appendChild(messageTime);
+        
+        // Вставляем сообщение перед индикатором набора
+        chatContainer.insertBefore(messageDiv, typingIndicator);
+        scrollToBottom();
+    }
+    
+    // Функция для отправки сообщения к API и получения ответа
+    async function sendMessageToAPI(message) {
+        try {
+            // Показываем индикатор набора текста
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
+            
+            // Отправляем запрос к API
+            const response = await fetch('/api/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ message: message })
+            });
+            
+            // Обрабатываем ответ
+            if (response.ok) {
+                const data = await response.json();
+                // Скрываем индикатор набора
+                typingIndicator.style.display = 'none';
+                // Добавляем ответ в чат
+                addMessage(data.response, false);
+            } else {
+                throw new Error('Ошибка сервера');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            // Скрываем индикатор набора
+            typingIndicator.style.display = 'none';
+            // Добавляем сообщение об ошибке
+            addMessage('Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.', false);
+        }
+    }
+    
+    // Обработчик отправки формы
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (message) {
+            // Добавляем сообщение пользователя в чат
+            addMessage(message, true);
+            
+            // Очищаем поле ввода
+            messageInput.value = '';
+            
+            // Отправляем сообщение к API
+            sendMessageToAPI(message);
+        }
+    });
+    
+    // Начальная прокрутка
+    scrollToBottom();
+});
+</script>
+{% endblock %} 

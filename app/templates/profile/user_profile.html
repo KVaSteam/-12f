@@ -1,0 +1,206 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Информация о пользователе -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Профиль пользователя</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ url_for('static', filename='img/profile_pics/' + user.profile_image) }}" 
+                         class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <h4>{{ user.username }}</h4>
+                    <p class="text-muted">
+                        <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'organizer' %}bg-primary{% else %}bg-success{% endif %} mb-2">
+                            {{ {'participant': 'Участник', 'organizer': 'Организатор', 'admin': 'Администратор'}[user.role] }}
+                        </span>
+                    </p>
+                    {% if user.email %}
+                        <p class="mb-1"><i class="fas fa-envelope me-2"></i>{{ user.email }}</p>
+                    {% endif %}
+                    <p class="mb-1"><i class="fas fa-calendar-alt me-2"></i>Дата регистрации: {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+                    
+                    {% if user.role == 'participant' %}
+                    <p class="card-text">
+                        <i class="fas fa-trophy me-1 text-warning"></i> 
+                        <strong>Очки за участие:</strong> <span class="badge bg-warning text-dark">{{ user.total_points() }}</span>
+                    </p>
+                    {% endif %}
+                    
+                    {% if current_user.id == user.id %}
+                    <div class="mt-3">
+                        <a href="{{ url_for('profile.update_profile') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-edit me-1"></i> Редактировать профиль
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Информация о мероприятиях -->
+        <div class="col-md-8">
+            {% if user.role in ['organizer', 'admin'] %}
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Организованные мероприятия</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if organized_events %}
+                            <div class="list-group">
+                                {% for event in organized_events %}
+                                    <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ event.title }}</h6>
+                                            <small>{{ event.start_datetime.strftime('%d.%m.%Y') }}</small>
+                                        </div>
+                                        <small>
+                                            <span class="badge {% if event.status == 'approved' %}bg-success{% elif event.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                                {{ {'approved': 'Одобрено', 'pending': 'На модерации', 'rejected': 'Отклонено', 'canceled': 'Отменено'}[event.status] }}
+                                            </span>
+                                            <span class="ms-2">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ event.location|truncate(30) }}
+                                            </span>
+                                        </small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Нет организованных мероприятий
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Участие в мероприятиях</h5>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                        <div class="list-group">
+                            {% for application in applications %}
+                                <div class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">
+                                            <a href="{{ url_for('events.event_detail', event_id=application.event.id) }}" class="text-decoration-none">
+                                                {{ application.event.title }}
+                                            </a>
+                                        </h5>
+                                        <small>{{ application.created_at.strftime('%d.%m.%Y') }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <span class="badge {% if application.status == 'approved' %}bg-success{% elif application.status == 'pending' %}bg-warning{% elif application.status == 'rejected' %}bg-danger{% endif %}">
+                                            {{ {'approved': 'Заявка одобрена', 'pending': 'Заявка на рассмотрении', 'rejected': 'Заявка отклонена'}[application.status] }}
+                                        </span>
+                                        {% if application.status == 'approved' and application.event.is_completed %}
+                                            <span class="badge bg-info ms-2">Мероприятие завершено</span>
+                                            {% if application.points > 0 %}
+                                                <span class="badge bg-warning text-dark ms-2">
+                                                    <i class="fas fa-trophy me-1"></i>{{ application.points }} очков
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </p>
+                                    <small>{{ application.event.start_datetime.strftime('%d.%m.%Y %H:%M') }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-info-circle me-1"></i>Нет заявок на мероприятия
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Раздел достижений -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Достижения</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Достижения участника -->
+                    <h6 class="border-bottom pb-2 mb-3">Достижения участника</h6>
+                    {% if user.event_achievements %}
+                        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
+                            {% for achievement in user.event_achievements[:5] %}
+                            <div class="col">
+                                <div class="card h-100 text-center">
+                                    <div class="p-2">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.achievement.icon) }}" 
+                                             alt="{{ achievement.achievement.name }}" class="img-fluid rounded-circle" 
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title small mb-0">{{ achievement.achievement.name }}</h6>
+                                        <div class="small">
+                                            <span class="badge bg-warning text-dark">{{ achievement.achievement.points }} очков</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if user.event_achievements|length > 5 %}
+                        <div class="text-center">
+                            <a href="{{ url_for('profile.user_achievements', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                Посмотреть все ({{ user.event_achievements|length }})
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-1"></i>
+                            У пользователя пока нет достижений участника.
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Достижения организатора (если пользователь организатор) -->
+                    {% if user.is_organizer() %}
+                    <h6 class="border-bottom pb-2 mb-3 mt-4">Достижения организатора</h6>
+                    {% if user.organizer_achievements %}
+                        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
+                            {% for achievement in user.organizer_achievements[:5] %}
+                            <div class="col">
+                                <div class="card h-100 text-center">
+                                    <div class="p-2">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.achievement.icon) }}" 
+                                             alt="{{ achievement.achievement.name }}" class="img-fluid rounded-circle" 
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title small mb-0">{{ achievement.achievement.name }}</h6>
+                                        <div class="small">
+                                            <span class="badge bg-warning text-dark">{{ achievement.achievement.points }} очков</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if user.organizer_achievements|length > 5 %}
+                        <div class="text-center">
+                            <a href="{{ url_for('profile.user_achievements', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                Посмотреть все ({{ user.organizer_achievements|length }})
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-1"></i>
+                            У организатора пока нет достижений.
+                        </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

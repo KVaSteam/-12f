@@ -1,0 +1,34 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{{ news.title }}</h4>
+        </div>
+        <div class="card-body">
+            {% if news.image_file %}
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='img/news_images/' + news.image_file) }}" 
+                         class="img-fluid rounded" style="max-height: 400px" alt="{{ news.title }}">
+                </div>
+            {% endif %}
+            
+            <div class="news-content mb-4">
+                {{ news.content|safe }}
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    <small>
+                        <i class="far fa-user me-1"></i>Автор: {{ news.author.username }}
+                        <span class="mx-2">|</span>
+                        <i class="far fa-calendar-alt me-1"></i>Опубликовано: {{ news.published_at.strftime('%d.%m.%Y %H:%M') }}
+                    </small>
+                </div>
+                <a href="{{ url_for('main.news_list') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i>К списку новостей
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

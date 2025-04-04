@@ -1,0 +1,135 @@
+/* Общие стили */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Стили для навигации */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Стили для карточек */
+.card {
+    border: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+/* Стили для мероприятий */
+.event-card {
+    margin-bottom: 20px;
+}
+
+.event-logo {
+    height: 150px;
+    object-fit: cover;
+}
+
+/* Стили для профиля пользователя */
+.profile-header {
+    background-color: #f1f5f9;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Стили для ачивок */
+.achievement-card {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.achievement-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 15px;
+    display: block;
+}
+
+/* Стили для календаря */
+.calendar-day {
+    height: 120px;
+    min-width: 120px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 5px;
+    position: relative;
+}
+
+.calendar-day.today {
+    background-color: #e7f5ff;
+    border: 2px solid #4dabf7;
+}
+
+.calendar-event {
+    background-color: #4c6ef5;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-bottom: 3px;
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Стили для описания событий с переносами строк */
+.event-description {
+    white-space: pre-line;
+}
+
+.event-description ul, 
+.event-description ol {
+    padding-left: 2rem;
+}
+
+.event-description br {
+    margin-bottom: 0.5rem;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 20px;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .calendar-day {
+        height: 100px;
+        min-width: 100px;
+    }
+} 

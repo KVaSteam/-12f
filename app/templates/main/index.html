@@ -1,0 +1,107 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+    <div class="row">
+        <!-- Календарь ближайших событий -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Ближайшие мероприятия
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                        <div class="list-group">
+                            {% for event in upcoming_events[:5] %}
+                                <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ event.title }}</h5>
+                                        <small>{{ event.start_datetime.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    </div>
+                                    <p class="mb-1 text-truncate">{{ event.description }}</p>
+                                    <small>
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ event.location }}
+                                        <span class="ms-3 badge {% if event.format == 'online' %}bg-success{% elif event.format == 'offline' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ {'online': 'Онлайн', 'offline': 'Офлайн', 'hybrid': 'Гибрид'}[event.format] }}
+                                        </span>
+                                        {% if event.max_participants and event.max_participants > 0 %}
+                                            {% set spots = event.available_spots() %}
+                                            {% if spots is not none %}
+                                                <span class="ms-2 badge {% if spots > 5 %}bg-success{% elif spots > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ spots }} из {{ event.max_participants }} мест
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        <div class="text-end mt-3">
+                            <a href="{{ url_for('main.calendar_view') }}" class="btn btn-outline-primary">Все мероприятия <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            В ближайшее время нет запланированных мероприятий.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Последние новости -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-newspaper me-2"></i>Последние новости
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if latest_news %}
+                        {% for news in latest_news %}
+                            <div class="card mb-3">
+                                <div class="row g-0">
+                                    <div class="col-4">
+                                        <img src="{{ url_for('static', filename='img/news_images/' + news.image) }}" class="img-fluid rounded-start" alt="{{ news.title }}">
+                                    </div>
+                                    <div class="col-8">
+                                        <div class="card-body py-2">
+                                            <h6 class="card-title">{{ news.title }}</h6>
+                                            <p class="card-text small mb-1 text-truncate">{{ news.content }}</p>
+                                            <small class="text-muted">{{ news.published_at.strftime('%d.%m.%Y') }}</small>
+                                            <a href="{{ url_for('main.news_detail', news_id=news.id) }}" class="stretched-link"></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-end">
+                            <a href="{{ url_for('main.news_list') }}" class="btn btn-outline-success">Все новости <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            Новости отсутствуют.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Присоединяйтесь к платформе -->
+    {% if not current_user.is_authenticated %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-light shadow">
+                    <div class="card-body p-4 text-center">
+                        <h3 class="mb-3">Присоединяйтесь к IT-сообществу региона!</h3>
+                        <p class="lead mb-4">Участвуйте в мероприятиях, создавайте события, общайтесь с единомышленниками и получайте достижения.</p>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-2">Регистрация</a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">Вход</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %} 

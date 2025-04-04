@@ -1,0 +1,87 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Управление пользователями</h1>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Назад к панели администратора
+        </a>
+    </div>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Аватар</th>
+                                <th>Имя пользователя</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Дата регистрации</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <img src="{{ url_for('static', filename='img/profile_pics/' + user.profile_image) }}" 
+                                             alt="{{ user.username }}" class="rounded-circle" style="width: 40px; height: 40px;">
+                                    </td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'organizer' %}bg-primary{% else %}bg-success{% endif %}">
+                                            {{ {'participant': 'Участник', 'organizer': 'Организатор', 'admin': 'Администратор'}[user.role] }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        {% if user.role != 'admin' or current_user.id != user.id %}
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Действия
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a href="{{ url_for('profile.admin_view_user', user_id=user.id) }}" class="dropdown-item">
+                                                            <i class="fas fa-user me-2"></i>Просмотр профиля
+                                                        </a>
+                                                    </li>
+                                                    {% if user.role != 'admin' %}
+                                                        <li>
+                                                            <form action="{{ url_for('admin.toggle_user_role', user_id=user.id) }}" method="post">
+                                                                <button type="submit" class="dropdown-item">
+                                                                    <i class="fas fa-exchange-alt me-2"></i>
+                                                                    {% if user.role == 'participant' %}
+                                                                        Сделать организатором
+                                                                    {% elif user.role == 'organizer' %}
+                                                                        Сделать участником
+                                                                    {% endif %}
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Нет зарегистрированных пользователей.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,81 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">{{ 'Редактировать' if achievement else 'Создать' }} достижение</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                {{ form.name.label(class="form-label") }}
+                                {% if form.name.errors %}
+                                <span class="text-danger">{{ form.name.errors[0] }}</span>
+                                {% endif %}
+                            </div>
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                {{ form.description.label(class="form-label") }}
+                                {% if form.description.errors %}
+                                <span class="text-danger">{{ form.description.errors[0] }}</span>
+                                {% endif %}
+                            </div>
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=3) }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                {{ form.points.label(class="form-label") }}
+                                {% if form.points.errors %}
+                                <span class="text-danger">{{ form.points.errors[0] }}</span>
+                                {% endif %}
+                            </div>
+                            {{ form.points(class="form-control" + (" is-invalid" if form.points.errors else ""), type="number", min="1") }}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between">
+                                {{ form.icon.label(class="form-label") }}
+                                {% if form.icon.errors %}
+                                <span class="text-danger">{{ form.icon.errors[0] }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if achievement and achievement.icon %}
+                            <div class="text-center mb-3">
+                                <p>Текущая иконка:</p>
+                                <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.icon) }}" 
+                                     alt="Текущая иконка" class="img-thumbnail" style="max-height: 100px;">
+                            </div>
+                            {% endif %}
+                            
+                            {{ form.icon(class="form-control" + (" is-invalid" if form.icon.errors else "")) }}
+                            <div class="form-text text-muted">
+                                Рекомендуемый размер: 200x200 пикселей. Поддерживаемые форматы: JPG, PNG, GIF.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('events.manage_achievements', event_id=event.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> {{ 'Сохранить изменения' if achievement else 'Создать достижение' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

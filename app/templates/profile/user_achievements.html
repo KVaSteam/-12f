@@ -1,0 +1,162 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Заголовок страницы -->
+    <div class="d-flex align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Достижения пользователя</h1>
+            <p class="text-muted">{{ user.username }}</p>
+        </div>
+        <a href="{{ url_for('profile.view_profile', user_id=user.id) }}" class="btn btn-secondary ms-auto">
+            <i class="fas fa-arrow-left me-1"></i>Вернуться к профилю
+        </a>
+    </div>
+    
+    <!-- Общая информация -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3 text-center">
+                    <img src="{{ url_for('static', filename='img/profile_pics/' + user.profile_image) }}" 
+                         class="rounded-circle img-fluid mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                </div>
+                <div class="col-md-9">
+                    <h4>{{ user.username }}</h4>
+                    <p>
+                        <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'organizer' %}bg-primary{% else %}bg-success{% endif %} mb-2">
+                            {{ {'participant': 'Участник', 'organizer': 'Организатор', 'admin': 'Администратор'}[user.role] }}
+                        </span>
+                    </p>
+                    <div class="d-flex align-items-center">
+                        <div class="me-4">
+                            <span class="h5">{{ user.total_points() }}</span>
+                            <small class="text-muted ms-1">общих очков</small>
+                        </div>
+                        <div class="me-4">
+                            <span class="h5">{{ user.event_achievements|length }}</span>
+                            <small class="text-muted ms-1">достижений участника</small>
+                        </div>
+                        {% if user.is_organizer() %}
+                        <div>
+                            <span class="h5">{{ user.organizer_achievements|length }}</span>
+                            <small class="text-muted ms-1">достижений организатора</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Вкладки для типов достижений -->
+    <ul class="nav nav-pills mb-3" id="achievements-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="user-achievements-tab" data-bs-toggle="pill" 
+                    data-bs-target="#user-achievements" type="button" role="tab" 
+                    aria-controls="user-achievements" aria-selected="true">
+                Достижения участника
+            </button>
+        </li>
+        {% if user.is_organizer() %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="organizer-achievements-tab" data-bs-toggle="pill" 
+                    data-bs-target="#organizer-achievements" type="button" role="tab" 
+                    aria-controls="organizer-achievements" aria-selected="false">
+                Достижения организатора
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+    
+    <div class="tab-content" id="achievements-tabContent">
+        <!-- Достижения участника -->
+        <div class="tab-pane fade show active" id="user-achievements" role="tabpanel" 
+             aria-labelledby="user-achievements-tab">
+            
+            {% if user.event_achievements %}
+                <div class="row g-4">
+                    {% for achievement in user.event_achievements %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <div class="row g-0">
+                                    <div class="col-3 p-3 text-center">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.achievement.icon) }}" 
+                                            alt="{{ achievement.achievement.name }}" 
+                                            class="img-fluid rounded-circle" style="width: 80px; height: 80px;">
+                                    </div>
+                                    <div class="col-9">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ achievement.achievement.name }}</h5>
+                                            <p class="card-text">{{ achievement.achievement.description }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-trophy me-1"></i>{{ achievement.achievement.points }} очков
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ achievement.date_earned.strftime('%d.%m.%Y') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>У пользователя пока нет достижений участника
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Достижения организатора -->
+        {% if user.is_organizer() %}
+        <div class="tab-pane fade" id="organizer-achievements" role="tabpanel" 
+             aria-labelledby="organizer-achievements-tab">
+            
+            {% if user.organizer_achievements %}
+                <div class="row g-4">
+                    {% for achievement in user.organizer_achievements %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <div class="row g-0">
+                                    <div class="col-3 p-3 text-center">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.achievement.icon) }}" 
+                                            alt="{{ achievement.achievement.name }}" 
+                                            class="img-fluid rounded-circle" style="width: 80px; height: 80px;">
+                                    </div>
+                                    <div class="col-9">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ achievement.achievement.name }}</h5>
+                                            <p class="card-text">{{ achievement.achievement.description }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-trophy me-1"></i>{{ achievement.achievement.points }} очков
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ achievement.date_earned.strftime('%d.%m.%Y') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>У организатора пока нет достижений
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

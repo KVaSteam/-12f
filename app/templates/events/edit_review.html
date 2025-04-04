@@ -1,0 +1,85 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">Редактирование отзыва</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Мероприятие: {{ event.title }}</h5>
+                        <p><small class="text-muted">{{ event.start_datetime.strftime('%d.%m.%Y %H:%M') }} - {{ event.end_datetime.strftime('%d.%m.%Y %H:%M') }}</small></p>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('events.edit_review', event_id=event.id, review_id=review.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            {{ form.rating.label(class="form-label") }}
+                            <div class="rating-input">
+                                {% for subfield in form.rating %}
+                                    {{ subfield }}
+                                    {{ subfield.label }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.comment.label(class="form-label") }}
+                            {{ form.comment(class="form-control", rows=5) }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Вернуться
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        
+        .rating-input input {
+            display: none;
+        }
+        
+        .rating-input label {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-right: 0.3rem;
+        }
+        
+        .rating-input label:before {
+            content: "\f005";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+        }
+        
+        .rating-input input:checked ~ label {
+            color: #ffca08;
+        }
+        
+        .rating-input input:hover ~ label,
+        .rating-input label:hover,
+        .rating-input label:hover ~ label {
+            color: #ffca08;
+        }
+    </style>
+{% endblock %} 

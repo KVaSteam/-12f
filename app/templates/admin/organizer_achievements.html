@@ -1,0 +1,172 @@
+{% extends "layout/base.html" %}
+
+{% block styles %}
+<style>
+    /* Предотвращение мерцания строк таблицы */
+    .table tr {
+        position: relative;
+        z-index: 1;
+    }
+    .table tr:hover {
+        z-index: 1;
+    }
+    /* Стиль для модальных окон */
+    .modal {
+        z-index: 1060;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Достижения организаторов</h1>
+        <a href="{{ url_for('admin.create_organizer_achievement') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Создать достижение
+        </a>
+    </div>
+    
+    <!-- Информационный блок -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Информация</h6>
+        </div>
+        <div class="card-body">
+            <p>На этой странице вы можете управлять достижениями для организаторов мероприятий. 
+               Достижения выдаются автоматически при выполнении условий (например, достижение определенного 
+               количества участников в мероприятии или проведение определенного количества мероприятий).</p>
+        </div>
+    </div>
+    
+    <!-- Таблица достижений -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Список достижений</h6>
+        </div>
+        <div class="card-body">
+            {% if achievements %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Иконка</th>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Тип условия</th>
+                                <th>Значение</th>
+                                <th>Очки</th>
+                                <th>Получено</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for achievement in achievements %}
+                                <tr>
+                                    <td class="text-center">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.icon) }}" 
+                                             alt="{{ achievement.name }}" style="width: 40px; height: 40px;">
+                                    </td>
+                                    <td>{{ achievement.name }}</td>
+                                    <td>{{ achievement.description }}</td>
+                                    <td>
+                                        {% if achievement.condition_type == 'participants_count' %}
+                                            <span class="badge bg-info">Участники в мероприятии</span>
+                                        {% elif achievement.condition_type == 'events_count' %}
+                                            <span class="badge bg-primary">Количество мероприятий</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ achievement.condition_value }}</td>
+                                    <td>{{ achievement.points }}</td>
+                                    <td>{{ achievement_stats[achievement.id] }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin.edit_organizer_achievement', achievement_id=achievement.id) }}" 
+                                           class="btn btn-sm btn-outline-primary mb-2 mb-md-0">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-achievement-btn" 
+                                                data-achievement-id="{{ achievement.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Достижения для организаторов еще не созданы. Нажмите кнопку "Создать достижение", чтобы добавить новое.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для подтверждения удаления -->
+{% if achievements %}
+    {% for achievement in achievements %}
+        <div class="modal fade" id="deleteModal{{ achievement.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Подтверждение удаления</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить достижение "{{ achievement.name }}"?</p>
+                        {% if achievement_stats[achievement.id] > 0 %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Внимание! Это достижение уже получили {{ achievement_stats[achievement.id] }} 
+                                организатор(ов). Удаление достижения приведет к его удалению у всех пользователей.
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <form action="{{ url_for('admin.delete_organizer_achievement', achievement_id=achievement.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обработка кнопок удаления достижения
+        const deleteButtons = document.querySelectorAll('.delete-achievement-btn');
+        const modalInstances = {};
+        
+        // Предварительно создаем экземпляры модальных окон
+        document.querySelectorAll('.modal').forEach(modal => {
+            modalInstances[modal.id] = new bootstrap.Modal(modal, {
+                backdrop: 'static',
+                keyboard: false
+            });
+        });
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const achievementId = this.getAttribute('data-achievement-id');
+                const modalId = `deleteModal${achievementId}`;
+                
+                if (modalInstances[modalId]) {
+                    modalInstances[modalId].show();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

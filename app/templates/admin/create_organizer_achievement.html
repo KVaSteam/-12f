@@ -1,0 +1,146 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            {% if achievement %}Редактирование достижения{% else %}Создание достижения{% endif %}
+        </h1>
+        <a href="{{ url_for('admin.organizer_achievements') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Назад к списку
+        </a>
+    </div>
+    
+    <!-- Форма создания/редактирования достижения -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                {% if achievement %}Редактирование достижения "{{ achievement.name }}"{% else %}Новое достижение для организаторов{% endif %}
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.csrf_token }}
+                
+                <div class="row mb-3">
+                    <!-- Название достижения -->
+                    <div class="col-md-6">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Очки -->
+                    <div class="col-md-6">
+                        {{ form.points.label(class="form-label") }}
+                        {{ form.points(class="form-control") }}
+                        {% if form.points.errors %}
+                            {% for error in form.points.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <!-- Тип условия -->
+                    <div class="col-md-6">
+                        {{ form.condition_type.label(class="form-label") }}
+                        {{ form.condition_type(class="form-select") }}
+                        {% if form.condition_type.errors %}
+                            {% for error in form.condition_type.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <div class="form-text mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <span id="condition-help-text">
+                                Выберите тип условия для получения достижения
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Значение условия -->
+                    <div class="col-md-6">
+                        {{ form.condition_value.label(class="form-label") }}
+                        {{ form.condition_value(class="form-control") }}
+                        {% if form.condition_value.errors %}
+                            {% for error in form.condition_value.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Описание достижения -->
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control", rows=3) }}
+                    {% if form.description.errors %}
+                        {% for error in form.description.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Иконка достижения -->
+                <div class="mb-3">
+                    {{ form.icon.label(class="form-label") }}
+                    {{ form.icon(class="form-control") }}
+                    {% if form.icon.errors %}
+                        {% for error in form.icon.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="form-text mt-1">
+                        Рекомендуемый размер: 128x128 пикселей. Допустимые форматы: JPG, PNG, GIF.
+                    </div>
+                    
+                    {% if achievement and achievement.icon %}
+                        <div class="mt-2">
+                            <p class="mb-1">Текущая иконка:</p>
+                            <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.icon) }}" 
+                                 alt="{{ achievement.name }}" style="max-width: 100px; max-height: 100px;">
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('admin.organizer_achievements') }}" class="btn btn-secondary me-2">Отмена</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const conditionTypeSelect = document.getElementById('condition_type');
+        const helpText = document.getElementById('condition-help-text');
+        
+        function updateHelpText() {
+            if (conditionTypeSelect.value === 'participants_count') {
+                helpText.textContent = 'Достижение выдается, когда в мероприятии участвует указанное количество пользователей';
+            } else if (conditionTypeSelect.value === 'events_count') {
+                helpText.textContent = 'Достижение выдается, когда организатор провел указанное количество мероприятий';
+            }
+        }
+        
+        // Обновляем текст подсказки при загрузке страницы
+        updateHelpText();
+        
+        // Обновляем текст подсказки при изменении выбора
+        conditionTypeSelect.addEventListener('change', updateHelpText);
+    });
+</script>
+{% endblock %} 

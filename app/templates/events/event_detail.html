@@ -1,0 +1,492 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+    <div class="row">
+        <!-- Основная информация о мероприятии -->
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">{{ event.title }}</h3>
+                    
+                    <!-- Статус мероприятия -->
+                    {% if event.status == 'pending' %}
+                        <span class="badge bg-warning">На модерации</span>
+                    {% elif event.status == 'rejected' %}
+                        <span class="badge bg-danger">Отклонено</span>
+                    {% elif event.is_past %}
+                        <span class="badge bg-secondary">Завершено</span>
+                    {% else %}
+                        <span class="badge bg-success">Активно</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    <!-- Изображение и детали -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <img src="{{ url_for('static', filename='img/event_logos/' + event.logo) }}" 
+                                alt="{{ event.title }}" class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-8">
+                            <h5>Детали мероприятия</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-calendar-alt me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Дата начала:</strong><br>
+                                        {{ event.start_datetime.strftime('%d.%m.%Y %H:%M') }}
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-hourglass-end me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Дата окончания:</strong><br>
+                                        {{ event.end_datetime.strftime('%d.%m.%Y %H:%M') }}
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-map-marker-alt me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Место проведения:</strong><br>
+                                        {{ event.location }}
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-users me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Организатор:</strong><br>
+                                        {{ event.organizer.username }}
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-desktop me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Формат:</strong>
+                                        <span class="ms-2 badge {% if event.format == 'online' %}bg-success{% elif event.format == 'offline' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ {'online': 'Онлайн', 'offline': 'Офлайн', 'hybrid': 'Гибрид'}[event.format] }}
+                                        </span>
+                                    </div>
+                                </li>
+                                {% if event.max_participants and event.max_participants > 0 %}
+                                <li class="list-group-item d-flex">
+                                    <i class="fas fa-chair me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Места:</strong>
+                                        {% set spots = event.available_spots() %}
+                                        {% if spots is not none %}
+                                            <span class="ms-2">
+                                                <span class="badge {% if spots > 5 %}bg-success{% elif spots > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ spots }} из {{ event.max_participants }} доступно
+                                                </span>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Описание мероприятия -->
+                    <div class="mb-4">
+                        <h5>Описание</h5>
+                        <div class="text-justify event-description">{{ event.description | nl2br | safe }}</div>
+                    </div>
+                    
+                    <!-- Статистика мероприятия -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Статистика мероприятия</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Участники и заявки -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <strong>Участники:</strong>
+                                        <span class="badge bg-primary">{{ event.participants_count() }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <strong>Всего заявок:</strong>
+                                        <span class="badge bg-secondary">{{ event.applications|length }}</span>
+                                    </div>
+                                    
+                                    <!-- Статус заявок -->
+                                    {% set approved_count = event.applications|selectattr("status", "equalto", "approved")|list|length %}
+                                    {% set pending_count = event.applications|selectattr("status", "equalto", "pending")|list|length %}
+                                    {% set rejected_count = event.applications|selectattr("status", "equalto", "rejected")|list|length %}
+                                    {% set total_count = event.applications|length %}
+                                    
+                                    {% if total_count > 0 %}
+                                    <div class="text-muted small mb-1">Статус заявок:</div>
+                                    <div class="progress mb-1" style="height: 0.5rem;">
+                                        {% if approved_count > 0 %}
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ (approved_count / total_count * 100) | round }}%;" 
+                                             aria-valuenow="{{ approved_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}">
+                                        </div>
+                                        {% endif %}
+                                        {% if pending_count > 0 %}
+                                        <div class="progress-bar bg-warning" role="progressbar" 
+                                             style="width: {{ (pending_count / total_count * 100) | round }}%;" 
+                                             aria-valuenow="{{ pending_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}">
+                                        </div>
+                                        {% endif %}
+                                        {% if rejected_count > 0 %}
+                                        <div class="progress-bar bg-danger" role="progressbar" 
+                                             style="width: {{ (rejected_count / total_count * 100) | round }}%;" 
+                                             aria-valuenow="{{ rejected_count }}" aria-valuemin="0" aria-valuemax="{{ total_count }}">
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <div>
+                                            <span class="badge bg-success">{{ approved_count }}</span> Одобрено
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-warning">{{ pending_count }}</span> Ожидает
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-danger">{{ rejected_count }}</span> Отклонено
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Рейтинг -->
+                                <div class="col-md-6">
+                                    {% if reviews|length > 0 %}
+                                    <hr>
+                                    <h6>Рейтинг:</h6>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            <span class="h4">{{ "%.1f"|format(reviews|map(attribute='rating')|sum / reviews|length) }}</span>
+                                            <small>/5</small>
+                                        </div>
+                                        <div class="ms-auto">
+                                            <span class="badge bg-info">{{ reviews|length }} отзывов</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle me-1"></i> У мероприятия пока нет отзывов.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Теги -->
+                    {% if event.tags %}
+                        <div class="mb-3">
+                            <h5>Теги</h5>
+                            <div>
+                                {% for tag in event.tags %}
+                                    <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Боковая панель -->
+        <div class="col-md-4">
+            <!-- Панель действий -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Действия</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.is_authenticated %}
+                        <!-- Для организатора мероприятия -->
+                        {% if current_user.id == event.organizer_id %}
+                            <div class="d-grid gap-2">
+                                {% if event.status == 'pending' or current_user.is_admin() %}
+                                    <a href="{{ url_for('events.edit_event', event_id=event.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i>Редактировать
+                                    </a>
+                                {% endif %}
+                                <a href="{{ url_for('events.manage_applications', event_id=event.id) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-ticket-alt me-1"></i>Управление заявками
+                                </a>
+                                {% if event.status == 'approved' and not event.is_completed %}
+                                    <a href="{{ url_for('events.complete_event', event_id=event.id) }}" class="btn btn-outline-warning">
+                                        <i class="fas fa-flag-checkered me-1"></i>Завершить мероприятие
+                                    </a>
+                                {% endif %}
+                            </div>
+                        <!-- Для администратора (но не организатора) -->
+                        {% elif current_user.is_admin() %}
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('events.edit_event', event_id=event.id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-edit me-1"></i>Редактировать
+                                </a>
+                                <a href="{{ url_for('events.manage_applications', event_id=event.id) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-ticket-alt me-1"></i>Управление заявками
+                                </a>
+                                {% if event.status == 'approved' and not event.is_completed %}
+                                    <a href="{{ url_for('events.complete_event', event_id=event.id) }}" class="btn btn-outline-warning">
+                                        <i class="fas fa-flag-checkered me-1"></i>Завершить мероприятие
+                                    </a>
+                                {% endif %}
+                            </div>
+                        <!-- Для участника -->
+                        {% else %}
+                            <!-- Применения для завершенных мероприятий не показываем -->
+                            {% if not event.is_past %}
+                                <div class="d-grid">
+                                    {% if user_application %}
+                                        <!-- Если участник уже подал заявку -->
+                                        {% if user_application.status == 'pending' %}
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-clock me-1"></i>Ваша заявка на рассмотрении
+                                            </div>
+                                            <form action="{{ url_for('events.cancel_application', event_id=event.id) }}" method="post">
+                                                <button type="submit" class="btn btn-outline-danger w-100">
+                                                    <i class="fas fa-times me-1"></i>Отменить заявку
+                                                </button>
+                                            </form>
+                                        {% elif user_application.status == 'approved' %}
+                                            <div class="alert alert-success">
+                                                <i class="fas fa-check-circle me-1"></i>Ваша заявка одобрена
+                                            </div>
+                                        {% elif user_application.status == 'rejected' %}
+                                            <div class="alert alert-danger">
+                                                <i class="fas fa-times-circle me-1"></i>Ваша заявка отклонена
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- Если участник еще не подал заявку, показываем кнопку подачи заявки -->
+                                        {% if event.status == 'approved' %}
+                                            {% if event.max_participants > 0 and event.available_spots() == 0 %}
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>Все места заняты
+                                                </div>
+                                            {% else %}
+                                                <form action="{{ url_for('events.apply_for_event', event_id=event.id) }}" method="post">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-primary w-100">
+                                                        <i class="fas fa-check-circle me-1"></i>Подать заявку
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-1"></i>Войдите, чтобы подать заявку на участие
+                        </div>
+                        <div class="d-grid">
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-1"></i>Войти
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- QR-код мероприятия -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-qrcode me-2"></i>Поделиться</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted mb-2">Отсканируйте QR-код для быстрого доступа к этому мероприятию</p>
+                    <img src="{{ qr_code }}" alt="QR-код мероприятия" class="img-fluid mb-2" style="max-width: 200px;">
+                    <div class="d-grid mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyEventLink()">
+                            <i class="fas fa-copy me-1"></i>Скопировать ссылку
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Достижения мероприятия -->
+            {% if achievements and event.status == 'completed' %}
+                <div class="card shadow my-4">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-trophy me-2"></i>Достижения мероприятия</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            {% for achievement in achievements %}
+                            <div class="col">
+                                <div class="card h-100 achievement-card">
+                                    <div class="card-body text-center">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.icon) }}" 
+                                             alt="{{ achievement.name }}" class="img-fluid mb-3" style="max-height: 100px;">
+                                        <h5 class="card-title">{{ achievement.name }}</h5>
+                                        <p class="card-text">{{ achievement.description }}</p>
+                                        <span class="badge bg-warning text-dark">{{ achievement.points }} очков</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Отзывы о мероприятии -->
+            {% if event.is_completed %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h4 class="card-title mb-0">Отзывы о мероприятии</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if reviews %}
+                            <div class="mb-4">
+                                <h5>Средняя оценка: {{ "%.1f"|format(reviews|map(attribute='rating')|sum / reviews|length) }} из 5</h5>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ (reviews|map(attribute='rating')|sum / reviews|length) * 20 }}%;" 
+                                         aria-valuenow="{{ (reviews|map(attribute='rating')|sum / reviews|length) * 20 }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="review-list">
+                                {% for review in reviews %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <h5 class="card-title mb-0">
+                                                {{ review.user.username }}
+                                            </h5>
+                                            <div class="text-warning">
+                                                {% for i in range(5) %}
+                                                    {% if i < review.rating %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <span class="ms-1 text-dark">{{ review.rating }}/5</span>
+                                            </div>
+                                        </div>
+                                        {% if review.comment %}
+                                            <p class="card-text">{{ review.comment }}</p>
+                                        {% endif %}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                            <div>
+                                                {% if current_user.is_authenticated and review.user_id == current_user.id %}
+                                                    <a href="{{ url_for('events.edit_review', event_id=event.id, review_id=review.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i> Изменить
+                                                    </a>
+                                                {% endif %}
+                                                {% if current_user.is_authenticated and current_user.is_admin() %}
+                                                    <form method="POST" action="{{ url_for('events.delete_review', event_id=event.id, review_id=review.id) }}" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Вы уверены, что хотите удалить этот отзыв?')">
+                                                            <i class="fas fa-trash"></i> Удалить
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Пока никто не оставил отзыв о данном мероприятии.</p>
+                        {% endif %}
+                        
+                        {% if current_user.is_authenticated and event.is_completed %}
+                            {% if user_application and user_application.status == 'approved' and not user_has_reviewed %}
+                                <hr>
+                                <h5 class="mt-4">Оставить отзыв</h5>
+                                <form method="POST" action="{{ url_for('events.submit_review', event_id=event.id) }}">
+                                    {{ review_form.csrf_token }}
+                                    <div class="mb-3">
+                                        {{ review_form.rating.label(class="form-label") }}
+                                        <div class="rating-input">
+                                            {% for subfield in review_form.rating %}
+                                                {{ subfield }}
+                                                {{ subfield.label }}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ review_form.comment.label(class="form-label") }}
+                                        {{ review_form.comment(class="form-control") }}
+                                    </div>
+                                    {{ review_form.submit(class="btn btn-primary") }}
+                                </form>
+                            {% elif user_has_reviewed %}
+                                <div class="alert alert-info mt-3">
+                                    Вы уже оставили отзыв об этом мероприятии.
+                                </div>
+                            {% elif not user_application or user_application.status != 'approved' %}
+                                <div class="alert alert-warning mt-3">
+                                    Только участники мероприятия могут оставлять отзывы.
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        
+        .rating-input input {
+            display: none;
+        }
+        
+        .rating-input label {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-right: 0.3rem;
+        }
+        
+        .rating-input label:before {
+            content: "\f005";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+        }
+        
+        .rating-input input:checked ~ label {
+            color: #ffca08;
+        }
+        
+        .rating-input label:hover,
+        .rating-input label:hover ~ label {
+            color: #ffca08;
+        }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function copyEventLink() {
+    navigator.clipboard.writeText(window.location.href)
+        .then(() => {
+            alert('Ссылка скопирована в буфер обмена!');
+        })
+        .catch(err => {
+            console.error('Ошибка при копировании ссылки: ', err);
+        });
+}
+</script>
+{% endblock %} 

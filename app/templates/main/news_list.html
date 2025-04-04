@@ -1,0 +1,91 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Новости IT-сообщества</h4>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-2">Сортировка:</span>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('main.news_list', sort_order='desc') }}" class="btn btn-{% if current_sort == 'desc' %}light{% else %}outline-light{% endif %} btn-sm">
+                        <i class="fas fa-sort-amount-down me-1"></i>Сначала новые
+                    </a>
+                    <a href="{{ url_for('main.news_list', sort_order='asc') }}" class="btn btn-{% if current_sort == 'asc' %}light{% else %}outline-light{% endif %} btn-sm">
+                        <i class="fas fa-sort-amount-up me-1"></i>Сначала старые
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if news.items %}
+                {% for item in news.items %}
+                    <div class="card mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-3">
+                                <img src="{{ url_for('static', filename='img/news_images/' + (item.image_file or 'default_news.jpg')) }}" 
+                                     class="img-fluid rounded-start" alt="{{ item.title }}">
+                            </div>
+                            <div class="col-md-9">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ item.title }}</h5>
+                                    <p class="card-text">{{ item.content|truncate(150) }}</p>
+                                    <p class="card-text">
+                                        <small class="text-muted">Опубликовано: {{ item.published_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    </p>
+                                    <a href="{{ url_for('main.news_detail', news_id=item.id) }}" class="btn btn-primary">Подробнее</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if news.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if news.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.news_list', page=news.prev_num, sort_order=current_sort) }}">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><span aria-hidden="true">&laquo;</span></span>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in range(max(1, news.page - 2), min(news.pages + 1, news.page + 3)) %}
+                                {% if page_num == news.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('main.news_list', page=page_num, sort_order=current_sort) }}">{{ page_num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if news.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.news_list', page=news.next_num, sort_order=current_sort) }}">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><span aria-hidden="true">&raquo;</span></span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    Новости отсутствуют.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %} 

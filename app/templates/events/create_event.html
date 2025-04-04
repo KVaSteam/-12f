@@ -1,0 +1,261 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ legend }}</h1>
+        <a href="{{ url_for('profile.organized_events') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Назад к моим мероприятиям
+        </a>
+    </div>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    {{ form.title.label(class="form-label") }}
+                    {% if form.title.errors %}
+                        {{ form.title(class="form-control is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.title.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.title(class="form-control") }}
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {% if form.description.errors %}
+                        {{ form.description(class="form-control is-invalid", rows=6) }}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.description(class="form-control", rows=6) }}
+                    {% endif %}
+                    <small class="form-text text-muted">Подробно опишите мероприятие, его цели и программу.</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.start_datetime.label(class="form-label") }}
+                        {% if form.start_datetime.errors %}
+                            {{ form.start_datetime(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.start_datetime.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.start_datetime(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        {{ form.end_datetime.label(class="form-label") }}
+                        {% if form.end_datetime.errors %}
+                            {{ form.end_datetime(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.end_datetime.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.end_datetime(class="form-control") }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.location.label(class="form-label") }}
+                    {% if form.location.errors %}
+                        {{ form.location(class="form-control is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.location.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.location(class="form-control") }}
+                    {% endif %}
+                    <small class="form-text text-muted">Для онлайн-мероприятий укажите ссылку на онлайн-платформу.</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.format.label(class="form-label") }}
+                        {% if form.format.errors %}
+                            {{ form.format(class="form-select is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.format.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.format(class="form-select") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        {{ form.tags.label(class="form-label") }}
+                        {% if form.tags.errors %}
+                            {{ form.tags(class="form-select is-invalid", multiple=True, size=5, id="tags-select") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.tags.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.tags(class="form-select", multiple=True, size=5, id="tags-select") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Выберите несколько тегов, удерживая Ctrl (или Cmd на Mac).</small>
+                        
+                        {% if current_user.is_admin() %}
+                            <div class="mt-2 card bg-light">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-2">Добавить новый тег</h6>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="new-tag-name" class="form-control" placeholder="Название тега">
+                                        <button type="button" id="add-tag-btn" class="btn btn-primary">
+                                            <i class="fas fa-plus me-1"></i>Добавить
+                                        </button>
+                                    </div>
+                                    <div id="tag-message" class="mt-2 small"></div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.default_points.label(class="form-label") }}
+                        {% if form.default_points.errors %}
+                            {{ form.default_points(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.default_points.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.default_points(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Очки, которые получат участники за посещение.</small>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        {{ form.max_participants.label(class="form-label") }}
+                        {% if form.max_participants.errors %}
+                            {{ form.max_participants(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.max_participants.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.max_participants(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Укажите 0 для неограниченного количества мест.</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.logo.label(class="form-label") }}
+                    {{ form.logo(class="form-control") }}
+                    {% if form.logo.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.logo.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Рекомендуемый размер логотипа: 800x450px.</small>
+                </div>
+                
+                <div class="d-grid">
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if current_user.is_admin() %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addTagBtn = document.getElementById('add-tag-btn');
+        const newTagInput = document.getElementById('new-tag-name');
+        const tagSelect = document.getElementById('tags-select');
+        const tagMessage = document.getElementById('tag-message');
+        
+        addTagBtn.addEventListener('click', function() {
+            const tagName = newTagInput.value.trim();
+            
+            if (!tagName) {
+                tagMessage.innerHTML = '<span class="text-danger">Введите название тега</span>';
+                return;
+            }
+            
+            // Проверка на дубликаты
+            for (let i = 0; i < tagSelect.options.length; i++) {
+                if (tagSelect.options[i].text.toLowerCase() === tagName.toLowerCase()) {
+                    tagMessage.innerHTML = '<span class="text-warning">Такой тег уже существует</span>';
+                    return;
+                }
+            }
+            
+            // Отправляем запрос на создание тега
+            fetch('/events/create_tag', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': "{{ csrf_token() if csrf_token else '' }}"
+                },
+                body: JSON.stringify({name: tagName})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Добавляем новый тег в выпадающий список
+                    const option = new Option(data.name, data.id);
+                    option.selected = true;
+                    tagSelect.add(option);
+                    
+                    // Очищаем поле ввода и показываем сообщение об успехе
+                    newTagInput.value = '';
+                    tagMessage.innerHTML = '<span class="text-success">Тег успешно добавлен!</span>';
+                    
+                    // Скрываем сообщение через 3 секунды
+                    setTimeout(() => {
+                        tagMessage.innerHTML = '';
+                    }, 3000);
+                } else {
+                    tagMessage.innerHTML = '<span class="text-danger">' + data.error + '</span>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                tagMessage.innerHTML = '<span class="text-danger">Произошла ошибка при добавлении тега</span>';
+            });
+        });
+        
+        // Добавление тега по нажатию Enter
+        newTagInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addTagBtn.click();
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %} 

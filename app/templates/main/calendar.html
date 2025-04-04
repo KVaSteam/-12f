@@ -1,0 +1,344 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+    <!-- Навигация по календарю -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">Календарь мероприятий</h4>
+                    <p class="mb-0">{{ month_names[month-1] }} {{ year }}</p>
+                </div>
+                <!-- Десктопная версия навигации (скрывается на мобильных) -->
+                <div class="d-none d-md-flex">
+                    <a href="{{ url_for('main.calendar_view', month=prev_month, year=prev_year) }}" class="btn btn-light me-2">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="{{ url_for('main.calendar_view') }}" class="btn btn-light me-2">
+                        Сегодня
+                    </a>
+                    <a href="{{ url_for('main.calendar_view', month=next_month, year=next_year) }}" class="btn btn-light">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Мобильная версия навигации (показывается только на мобильных) -->
+            <div class="d-flex d-md-none flex-column mt-2">
+                <a href="{{ url_for('main.calendar_view') }}" class="btn btn-light mb-2 w-100">
+                    Сегодня
+                </a>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('main.calendar_view', month=prev_month, year=prev_year) }}" class="btn btn-light w-50 me-2">
+                        <i class="fas fa-chevron-left"></i> Пред.
+                    </a>
+                    <a href="{{ url_for('main.calendar_view', month=next_month, year=next_year) }}" class="btn btn-light w-50">
+                        След. <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Форма фильтрации мероприятий -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Фильтр мероприятий</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filter-form">
+                <div class="row g-3">
+                    <!-- Даты -->
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Дата начала</label>
+                        {{ form.start_date(class="form-control", id="start_date") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Дата окончания</label>
+                        {{ form.end_date(class="form-control", id="end_date") }}
+                    </div>
+                    
+                    <!-- Формат -->
+                    <div class="col-md-2">
+                        <label for="event_format" class="form-label">Формат</label>
+                        {{ form.event_format(class="form-select", id="event_format") }}
+                    </div>
+                    
+                    <!-- Статус -->
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Статус</label>
+                        {{ form.status(class="form-select", id="status") }}
+                    </div>
+                    
+                    <!-- Кнопка применения фильтров -->
+                    <div class="col-md-2 d-flex align-items-end">
+                        {{ form.submit(class="btn btn-primary w-100") }}
+                    </div>
+                </div>
+                
+                <!-- Теги -->
+                <div class="mt-3">
+                    <label for="tags" class="form-label">Теги</label>
+                    <div class="row">
+                        <div class="col-md-10">
+                            <select name="tags" id="tags" class="form-select" multiple>
+                                {% for tag_id, tag_name in form.tags.choices %}
+                                    <option value="{{ tag_id }}" {% if tag_id in form.tags.data %}selected{% endif %}>{{ tag_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" id="clear-tags" class="btn btn-outline-secondary w-100 mb-2">Очистить теги</button>
+                            <button type="button" id="clear-all-filters" class="btn btn-outline-danger w-100">Очистить все</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Список мероприятий -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                Мероприятия
+                {% if form.start_date.data or form.end_date.data or form.event_format.data or form.status.data or form.tags.data %}
+                    (с фильтрами)
+                {% else %}
+                    за {{ month_names[month-1] }} {{ year }}
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if events %}
+                <div class="list-group">
+                    {% for event in events %}
+                        <a href="{{ url_for('events.event_detail', event_id=event.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1 event-title">{{ event.title }}</h5>
+                                <span class="text-muted ms-2">{{ event.start_datetime.strftime('%d.%m.%Y %H:%M') }}</span>
+                            </div>
+                            <p class="mb-1 text-truncate">{{ event.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                <div class="event-badges">
+                                    <span class="event-location">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ event.location }}
+                                    </span>
+                                    
+                                    <!-- Формат мероприятия -->
+                                    <span class="ms-2 badge 
+                                        {% if event.format == 'online' %}bg-success
+                                        {% elif event.format == 'offline' %}bg-primary
+                                        {% else %}bg-info{% endif %}">
+                                        {{ {'online': 'Онлайн', 'offline': 'Офлайн', 'hybrid': 'Гибрид'}[event.format] }}
+                                    </span>
+                                    
+                                    <!-- Места -->
+                                    {% if event.max_participants and event.max_participants > 0 %}
+                                        {% set spots = event.available_spots() %}
+                                        {% if spots is not none %}
+                                            <span class="ms-2 badge {% if spots > 5 %}bg-success{% elif spots > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ spots }} из {{ event.max_participants }} мест
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    <!-- Теги -->
+                                    {% for tag in event.tags %}
+                                        <span class="badge bg-secondary ms-1">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Статус мероприятия -->
+                                <span class="badge 
+                                    {% if event.status == 'approved' %}bg-success
+                                    {% elif event.status == 'completed' %}bg-secondary
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ {'approved': 'Активное', 'completed': 'Завершено'}[event.status] }}
+                                </span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    {% if form.start_date.data or form.end_date.data or form.event_format.data or form.status.data or form.tags.data %}
+                        По указанным фильтрам мероприятий не найдено.
+                    {% else %}
+                        В выбранном месяце нет запланированных мероприятий.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Календарь -->
+    <div class="card shadow">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Сетка календаря</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered calendar-table">
+                <thead>
+                    <tr>
+                        {% for day in weekdays %}
+                            <th class="text-center">{{ day }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in calendar_days %}
+                        <tr>
+                            {% for day, date_obj in week %}
+                                <td class="calendar-day{% if date_obj and date_obj == today %} today{% endif %}">
+                                    {% if day != 0 %}
+                                        <div class="day-number">{{ day }}</div>
+                                        {% if date_obj %}
+                                            {% set key = (date_obj.year, date_obj.month, date_obj.day) %}
+                                            {% if key in day_events_map %}
+                                                <div class="events-indicator">
+                                                    {% for event in day_events_map[key][:3] %}
+                                                        <div class="event-dot" title="{{ event.title }}"></div>
+                                                    {% endfor %}
+                                                    {% if day_events_map[key]|length > 3 %}
+                                                        <div class="more-events">+{{ day_events_map[key]|length - 3 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .calendar-table {
+            table-layout: fixed;
+        }
+        .calendar-day {
+            height: 100px;
+            vertical-align: top;
+            padding: 5px;
+        }
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .today {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        .events-indicator {
+            margin-top: 5px;
+        }
+        .event-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #007bff;
+            margin-bottom: 2px;
+        }
+        .more-events {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        /* Стили для обрезания длинного текста */
+        .event-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        
+        .event-location {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        /* Медиа-запрос для мобильных устройств */
+        @media (max-width: 767.98px) {
+            .event-title {
+                max-width: 200px;
+            }
+            
+            .event-location {
+                max-width: 150px;
+            }
+            
+            .event-badges {
+                margin-top: 5px;
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            .event-badges .badge {
+                margin-bottom: 3px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация селекта с тегами
+            const tagsSelect = document.getElementById('tags');
+            
+            // При изменении селектов, автоматически отправляем форму фильтрации
+            const autoSubmitSelects = document.querySelectorAll('#event_format, #status');
+            autoSubmitSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    document.getElementById('filter-form').submit();
+                });
+            });
+
+            // Обработчик для кнопки очистки тегов
+            document.getElementById('clear-tags').addEventListener('click', function() {
+                // Очищаем множественный выбор тегов
+                const tagsSelect = document.getElementById('tags');
+                for (let i = 0; i < tagsSelect.options.length; i++) {
+                    tagsSelect.options[i].selected = false;
+                }
+                
+                // Если нужно сразу применить фильтр после очистки, раскомментируйте строку ниже
+                // document.getElementById('filter-form').submit();
+            });
+            
+            // Обработчик для кнопки очистки всех фильтров
+            document.getElementById('clear-all-filters').addEventListener('click', function() {
+                // Очищаем все поля формы
+                const form = document.getElementById('filter-form');
+                
+                // Сбрасываем даты
+                form.querySelector('#start_date').value = '';
+                form.querySelector('#end_date').value = '';
+                
+                // Сбрасываем выпадающие списки
+                form.querySelector('#event_format').value = '';
+                form.querySelector('#status').value = '';
+                
+                // Очищаем теги
+                const tagsSelect = document.getElementById('tags');
+                for (let i = 0; i < tagsSelect.options.length; i++) {
+                    tagsSelect.options[i].selected = false;
+                }
+                
+                // Отправляем форму
+                form.submit();
+            });
+        });
+    </script>
+{% endblock %} 

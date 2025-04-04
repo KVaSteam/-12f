@@ -1,0 +1,86 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Управление достижениями</h1>
+        <div>
+            <a href="{{ url_for('admin.create_achievement') }}" class="btn btn-success me-2">
+                <i class="fas fa-plus me-1"></i> Добавить достижение
+            </a>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Назад к панели администратора
+            </a>
+        </div>
+    </div>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            {% if achievements %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for achievement in achievements %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">{{ achievement.name }}</h5>
+                                    <span class="badge bg-primary">{{ achievement.points }} очков</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <img src="{{ url_for('static', filename='img/achievement_icons/' + achievement.icon) }}" 
+                                             alt="{{ achievement.name }}" style="width: 100px; height: 100px;">
+                                    </div>
+                                    <p class="card-text">{{ achievement.description }}</p>
+                                    <p class="card-text small text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>Условие: {{ achievement.condition }}
+                                    </p>
+                                </div>
+                                <div class="card-footer d-flex justify-content-end">
+                                    <a href="{{ url_for('admin.edit_achievement', achievement_id=achievement.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i> Редактировать
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ achievement.id }}">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Достижения отсутствуют. <a href="{{ url_for('admin.create_achievement') }}">Создать первое достижение</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для подтверждения удаления -->
+{% if achievements %}
+    {% for achievement in achievements %}
+        <div class="modal fade" id="deleteModal{{ achievement.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Подтверждение удаления</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить достижение "{{ achievement.name }}"?</p>
+                        <p class="text-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Это также удалит достижение у всех пользователей, которые его получили.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <form action="{{ url_for('admin.delete_achievement', achievement_id=achievement.id) }}" method="post">
+                            <button type="submit" class="btn btn-danger">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endblock %} 
